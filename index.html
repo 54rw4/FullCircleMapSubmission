@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mapbox Directions - William's Café</title>
+
+    <!-- Google Font: Overpass -->
+    <link href="https://fonts.googleapis.com/css2?family=Overpass:wght@300;400;600&display=swap" rel="stylesheet">
+
+    <!-- Mapbox CSS -->
+    <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet">
+    
+    <style>
+        /* Global Styles */
+        body, html { 
+            margin: 0; 
+            padding: 0; 
+            height: 100%; 
+            font-family: 'Overpass', sans-serif; 
+        }
+
+        /* Header UI */
+        .header {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            z-index: 10;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+        }
+
+        /* Back Button */
+        .back-button {
+            text-decoration: none;
+            background: #BC412B;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 500px;
+            font-size: 14px;
+            font-weight: bold;
+            transition: 0.3s;
+            margin-right: 16px;
+        }
+
+        .back-button:hover {
+            background: #A03624;
+        }
+
+        /* Title and Route Info */
+        .header h2 {
+            margin: 0;
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+            display: flex;
+            align-items: center;
+        }
+
+        #route-info {
+            font-size: 14px;
+            color: #555;
+            margin-left: 10px;
+        }
+
+        /* Map Styling */
+        #map {
+            width: 100%;
+            height: 100vh;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header UI -->
+    <div class="header">
+        <div class="header-left">
+            <a target="_blank" href="https://www.figma.com/proto/gSirJPIdS994gwavRyGCyw/Hack-Canada-2025%3A-Full-Circle-Web-App?node-id=80-1775&t=KI5iLUIlwKUZNdck-0&scaling=scale-down&content-scaling=fixed&page-id=7%3A3&starting-point-node-id=80%3A1775&show-proto-sidebar=1" class="back-button">← Back</a>
+            <h2>From Wilfrid Laurier University to William's Café <span id="route-info">| Calculating...</span></h2>
+        </div>
+    </div>
+
+    <!-- Map Container -->
+    <div id="map"></div>
+
+    <!-- Mapbox JS -->
+    <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
+
+    <script>
+        // Replace with your own Mapbox Access Token
+        mapboxgl.accessToken = 'pk.eyJ1IjoiZmFyd2FiIiwiYSI6ImNsbnQwZTZkbTAwN3EycW5iMHAybjR3dGMifQ.mnGnnnwzgT4zeUbc4_Rrzw';
+
+        // Set up the map centered on the restaurant
+        const map = new mapboxgl.Map({
+            container: 'map',
+            style: 'mapbox://styles/mapbox/streets-v11',
+            center: [-80.5204, 43.4733],
+            zoom: 14
+        });
+
+        // Define start and end points (longitude, latitude)
+        const start = [-80.5401, 43.4723]; // Wilfrid Laurier University
+        const end = [-80.5182, 43.4727]; // William's Café
+
+        // Add a marker for the starting location
+        new mapboxgl.Marker({ color: '#DC602E' })
+            .setLngLat(start)
+            .setPopup(new mapboxgl.Popup().setHTML('<h3>Wilfrid Laurier University</h3>'))
+            .addTo(map);
+
+        // Add a marker for the destination
+        new mapboxgl.Marker({ color: '#BC412B' })
+            .setLngLat(end)
+            .setPopup(new mapboxgl.Popup().setHTML('<h3>William\'s Café</h3>'))
+            .addTo(map);
+
+        // Function to get directions using Mapbox Directions API
+        async function getRoute() {
+            const query = `https://api.mapbox.com/directions/v5/mapbox/driving/${start[0]},${start[1]};${end[0]},${end[1]}?steps=true&geometries=geojson&access_token=${mapboxgl.accessToken}`;
+
+            const response = await fetch(query);
+            const data = await response.json();
+            const route = data.routes[0].geometry;
+
+            // Extract time and distance
+            const duration = Math.round(data.routes[0].duration / 60); // Convert seconds to minutes
+            const distance = (data.routes[0].distance / 1000).toFixed(1); // Convert meters to km
+
+            // Update route info
+            document.getElementById('route-info').innerText = ` | ${duration} min | ${distance} km`;
+
+            // Add route line to map
+            map.addLayer({
+                id: 'route',
+                type: 'line',
+                source: {
+                    type: 'geojson',
+                    data: {
+                        type: 'Feature',
+                        properties: {},
+                        geometry: route
+                    }
+                },
+                layout: { 'line-join': 'round', 'line-cap': 'round' },
+                paint: { 'line-color': '#BC412B', 'line-width': 5 }
+            });
+        }
+
+        // Load the route once the map is ready
+        map.on('load', getRoute);
+    </script>
+</body>
+</html>
